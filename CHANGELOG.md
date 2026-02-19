@@ -8,6 +8,7 @@ Final releases will consolidate all intermediate changes in chronological order.
 ## UNRELEASED
 
 * feat(stt): support INTERIM transcriptions
+* build: livekit-agents[gladia]~=1.4
 
 ## v0.1.0
 
