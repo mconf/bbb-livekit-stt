@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
 # Use uv instead of pip, see https://github.com/astral-sh/uv
-RUN pip install uv
+RUN pip install --no-cache-dir uv==0.10.4
 
 ENV VIRTUAL_ENV=/opt/venv
 
