@@ -13,6 +13,11 @@ from config import gladia_config, redis_config
 
 load_dotenv()
 
+
+def _is_below_min_confidence(alternative: stt.SpeechData, min_confidence: float) -> bool:
+    return alternative.confidence < min_confidence
+
+
 async def entrypoint(ctx: JobContext):
     nest_asyncio.apply()
 
@@ -78,6 +83,13 @@ async def entrypoint(ctx: JobContext):
         original_lang = original_locale.split('-')[0]
 
         for alternative in event.alternatives:
+            if _is_below_min_confidence(alternative, gladia_config.min_confidence_final):
+                logging.debug(
+                    f"Discarding final transcript for {participant.identity}: "
+                    f"low confidence ({alternative.confidence} < {gladia_config.min_confidence_final})."
+                )
+                continue
+
             transcript_lang = alternative.language
             text = alternative.text
             bbb_locale = None
@@ -117,6 +129,13 @@ async def entrypoint(ctx: JobContext):
         min_utterance_length = p_settings.get("min_utterance_length", 0)
 
         for alternative in event.alternatives:
+            if _is_below_min_confidence(alternative, gladia_config.min_confidence_interim):
+                logging.debug(
+                    f"Discarding interim transcript for {participant.identity}: "
+                    f"low confidence ({alternative.confidence} < {gladia_config.min_confidence_interim})."
+                )
+                continue
+
             transcript_lang = alternative.language
             text = alternative.text
 

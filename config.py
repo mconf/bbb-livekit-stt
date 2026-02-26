@@ -75,6 +75,14 @@ redis_config = RedisConfig()
 @dataclass
 class GladiaConfig:
     api_key: str | None = field(default_factory=lambda: os.getenv('GLADIA_API_KEY'))
+    min_confidence_interim: float = field(default_factory=lambda: _get_float_env(
+        'GLADIA_MIN_CONFIDENCE_INTERIM',
+        _get_float_env('GLADIA_MIN_CONFIDENCE', 0.0),
+    ))
+    min_confidence_final: float = field(default_factory=lambda: _get_float_env(
+        'GLADIA_MIN_CONFIDENCE_FINAL',
+        _get_float_env('GLADIA_MIN_CONFIDENCE', 0.0),
+    ))
     model: str | None = field(default_factory=lambda: os.getenv('GLADIA_MODEL', None))
     base_url: str | None = field(default_factory=lambda: os.getenv('GLADIA_BASE_URL', None))
     interim_results: bool | None = field(default_factory=lambda: _get_bool_env('GLADIA_INTERIM_RESULTS', None))
