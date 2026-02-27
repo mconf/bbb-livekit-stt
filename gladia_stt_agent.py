@@ -123,14 +123,15 @@ class GladiaSttAgent(EventEmitter):
 
         settings = self.participant_settings.get(participant.identity)
 
-        if settings:
+        locale = settings.get("locale") if settings else None
+        provider = settings.get("provider") if settings else None
+
+        if locale and provider:
             logging.debug(
                 f"Participant {participant.identity} subscribed with active settings, starting transcription.",
                 extra={"settings": settings},
             )
-            self.start_transcription_for_user(
-                participant.identity, settings["locale"], settings["provider"]
-            )
+            self.start_transcription_for_user(participant.identity, locale, provider)
         else:
             logging.debug(
                 f"Participant {participant.identity} subscribed with no active settings, skipping transcription."
