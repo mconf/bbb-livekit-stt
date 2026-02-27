@@ -44,6 +44,8 @@ class RedisManager:
         user_id: str,
         transcript_data: SpeechData,
         locale: str,
+        start: int = 0,
+        end: int = 0,
         result: bool = True,
     ):
         if not self.pub_client:
@@ -56,8 +58,8 @@ class RedisManager:
             locale,
             transcript_data.text,
             result,
-            int(transcript_data.start_time * 1000),
-            int(transcript_data.end_time * 1000),
+            start,
+            end,
         )
 
         try:

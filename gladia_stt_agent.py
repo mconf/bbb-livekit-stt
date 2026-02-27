@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 
 from livekit import rtc
 from livekit.agents import (
@@ -22,6 +23,7 @@ class GladiaSttAgent(EventEmitter):
         self.room: rtc.Room | None = None
         self.processing_info = {}
         self.participant_settings = {}
+        self.open_time = time.time()
         self._shutdown = asyncio.Event()
 
     async def start(self, ctx: JobContext):
@@ -182,6 +184,7 @@ class GladiaSttAgent(EventEmitter):
         stt_stream: stt.SpeechStream,
     ):
         audio_stream = rtc.AudioStream(track)
+        self.open_time = time.time()
 
         async def forward_audio_task():
             try:
@@ -193,13 +196,21 @@ class GladiaSttAgent(EventEmitter):
         async def process_stt_task():
             async for event in stt_stream:
                 if event.type == stt.SpeechEventType.FINAL_TRANSCRIPT:
-                    self.emit("final_transcript", participant=participant, event=event)
+                    self.emit(
+                        "final_transcript",
+                        participant=participant,
+                        event=event,
+                        open_time=self.open_time,
+                    )
                 elif (
                     event.type == stt.SpeechEventType.INTERIM_TRANSCRIPT
                     and self.config.interim_results
                 ):
                     self.emit(
-                        "interim_transcript", participant=participant, event=event
+                        "interim_transcript",
+                        participant=participant,
+                        event=event,
+                        open_time=self.open_time,
                     )
 
         try:

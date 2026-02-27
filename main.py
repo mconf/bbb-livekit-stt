@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import math
 
 import nest_asyncio
 from dotenv import load_dotenv
@@ -90,7 +91,9 @@ async def entrypoint(ctx: JobContext):
 
     @agent.on("final_transcript")
     async def on_final_transcript(
-        participant: rtc.RemoteParticipant, event: stt.SpeechEvent
+        participant: rtc.RemoteParticipant,
+        event: stt.SpeechEvent,
+        open_time: float = agent.open_time,
     ):
         p_settings = agent.participant_settings.get(participant.identity, {})
         original_locale = p_settings.get("locale")
@@ -116,19 +119,25 @@ async def entrypoint(ctx: JobContext):
             transcript_lang = alternative.language
             text = alternative.text
             bbb_locale = None
+            start_time_adjusted = math.floor(open_time + alternative.start_time)
+            end_time_adjusted = math.floor(open_time + alternative.end_time)
             utterance_duration_seconds = max(
                 0.0, alternative.end_time - alternative.start_time
             )
-
-            logging.info(
-                f"Transcript for {participant.identity} = [{transcript_lang}] {text}",
+            logging.debug(
+                f"FINAL transcript for {participant.identity} = [{transcript_lang}] {text}",
                 extra={
                     "utterance_duration_seconds": utterance_duration_seconds,
+                    "open_time": open_time,
+                    "start_time": alternative.start_time,
+                    "end_time": alternative.end_time,
+                    "start_time_adjusted": start_time_adjusted,
+                    "end_time_adjusted": end_time_adjusted,
                     "confidence": alternative.confidence,
                     "original_lang": original_lang,
+                    "alternative": alternative,
                 },
             )
-
             if transcript_lang == original_lang:
                 # This is the original transcript, use the original BBB locale
                 bbb_locale = original_locale
@@ -144,12 +153,20 @@ async def entrypoint(ctx: JobContext):
                 bbb_locale = transcript_lang
 
             await redis_manager.publish_update_transcript_pub_msg(
-                agent.room.name, participant.identity, alternative, bbb_locale
+                agent.room.name,
+                participant.identity,
+                alternative,
+                bbb_locale,
+                start_time_adjusted,
+                end_time_adjusted,
+                result=True,
             )
 
     @agent.on("interim_transcript")
     async def on_interim_transcript(
-        participant: rtc.RemoteParticipant, event: stt.SpeechEvent
+        participant: rtc.RemoteParticipant,
+        event: stt.SpeechEvent,
+        open_time: float = agent.open_time,
     ):
         p_settings = agent.participant_settings.get(participant.identity, {})
 
@@ -179,6 +196,8 @@ async def entrypoint(ctx: JobContext):
 
             transcript_lang = alternative.language
             text = alternative.text
+            start_time_adjusted = math.floor(open_time + alternative.start_time)
+            end_time_adjusted = math.floor(open_time + alternative.end_time)
             utterance_duration_seconds = max(
                 0.0, alternative.end_time - alternative.start_time
             )
@@ -189,18 +208,33 @@ async def entrypoint(ctx: JobContext):
             ):
                 logging.debug(
                     f"Discarding interim transcript for {participant.identity}: too short "
-                    f"({utterance_duration_seconds:.3f}s <= {min_utterance_length}s)."
+                    f"({utterance_duration_seconds:.3f}s <= {min_utterance_length}s).",
+                    extra={
+                        "utterance_duration_seconds": utterance_duration_seconds,
+                        "min_utterance_length": min_utterance_length,
+                        "open_time": open_time,
+                        "start_time": alternative.start_time,
+                        "end_time": alternative.end_time,
+                        "start_time_adjusted": start_time_adjusted,
+                        "end_time_adjusted": end_time_adjusted,
+                    },
                 )
                 continue
 
             bbb_locale = None
 
             logging.debug(
-                f"Interim transcript for {participant.identity} = [{transcript_lang}] {text}",
+                f"INTERIM transcript for {participant.identity} = [{transcript_lang}] {text}",
                 extra={
                     "utterance_duration_seconds": utterance_duration_seconds,
+                    "open_time": open_time,
+                    "start_time": alternative.start_time,
+                    "end_time": alternative.end_time,
+                    "start_time_adjusted": start_time_adjusted,
+                    "end_time_adjusted": end_time_adjusted,
                     "confidence": alternative.confidence,
                     "original_lang": original_lang,
+                    "alternative": alternative,
                 },
             )
 
@@ -221,6 +255,8 @@ async def entrypoint(ctx: JobContext):
                 participant.identity,
                 alternative,
                 bbb_locale,
+                start_time_adjusted,
+                end_time_adjusted,
                 result=False,
             )
 
