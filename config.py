@@ -120,7 +120,7 @@ class GladiaConfig:
         default_factory=lambda: os.getenv("GLADIA_ENCODING", "wav/pcm")
     )
     endpointing: float | None = field(
-        default_factory=lambda: _get_float_env("GLADIA_ENDPOINTING", None)
+        default_factory=lambda: _get_float_env("GLADIA_ENDPOINTING", 0.01)
     )
     maximum_duration_without_endpointing: float | None = field(
         default_factory=lambda: _get_float_env(
