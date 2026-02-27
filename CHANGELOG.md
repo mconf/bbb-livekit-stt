@@ -14,6 +14,7 @@ Final releases will consolidate all intermediate changes in chronological order.
 * refactor: adjust fallback/default Gladia values
 * build: livekit-agents[gladia]~=1.4
 * build: add docker image build and publish workflow
+* build: add app linting workflow
 
 ## v0.1.0
 
